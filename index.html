@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamForge - Music & Video Downloader Studio</title>
+
+    <!-- Bootstrap 5.3.3 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <!-- Bootstrap Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        /* Modern aesthetics using CSS Variables & Bootstrap Utilities */
+        :root {
+            --sf-gradient-primary: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            --sf-glass-bg: rgba(255, 255, 255, 0.05);
+            --sf-glass-border: rgba(255, 255, 255, 0.12);
+        }
+
+        [data-bs-theme="light"] {
+            --sf-glass-bg: rgba(0, 0, 0, 0.03);
+            --sf-glass-border: rgba(0, 0, 0, 0.08);
+        }
+
+        .brand-gradient-text {
+            background: var(--sf-gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-gradient-bg {
+            background: var(--sf-gradient-primary);
+        }
+
+        .glass-card {
+            background: var(--sf-glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--sf-glass-border);
+        }
+
+        .thumbnail-container {
+            position: relative;
+            aspect-ratio: 16/9;
+            overflow: hidden;
+            border-radius: 0.75rem;
+        }
+
+        .thumbnail-container img {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.4s ease;
+        }
+
+        .trend-card:hover .thumbnail-container img {
+            transform: scale(1.05);
+        }
+
+        .platform-badge {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            backdrop-filter: blur(6px);
+        }
+
+        /* Custom Wave Progress Effect */
+        .progress-bar-animated-stripes {
+            background-size: 1rem 1rem;
+        }
+    </style>
+</head>
+<body class="min-vh-100 flex-column d-flex bg-body-tertiary">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg border-bottom sticky-top glass-card bg-body-baseline">
+        <div class="container">
+            <a class="navbar-brand d-flex items-center gap-2 font-bold fw-bold" href="#">
+                <span class="p-2 rounded-3 brand-gradient-bg text-white d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <i class="bi bi-cloud-arrow-down-fill"></i>
+                </span>
+                <span class="fs-4 brand-gradient-text">StreamForge</span>
+            </a>
+
+            <div class="d-flex align-items-center gap-2">
+                <!-- Theme Switcher -->
+                <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="themeToggleBtn" type="button">
+                    <i class="bi bi-moon-stars-fill me-1" id="themeIcon"></i>
+                    <span id="themeLabel" class="d-none d-sm-inline">Modo Oscuro</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container my-4 my-md-5 flex-grow-1">
+
+        <!-- Hero Input Banner -->
+        <section class="row justify-content-center text-center mb-5">
+            <div class="col-lg-10 col-xl-8">
+                <span class="badge rounded-pill text-bg-primary px-3 py-2 mb-3 bg-opacity-10 text-primary border border-primary-subtle">
+                    <i class="bi bi-lightning-charge-fill me-1"></i> Conversión Multiformato 4K & MP3
+                </span>
+                <h1 class="display-5 fw-bold mb-3">Descarga Música y Video de tus Plataformas Favoritas</h1>
+                <p class="text-secondary lead mb-4">Ingresa cualquier enlace de YouTube, TikTok, Spotify, Vimeo o Soundcloud para convertir y extraer en alta definición.</p>
+
+                <!-- Search Input Group -->
+                <div class="card p-2 p-md-3 shadow-lg rounded-4 border-0 glass-card">
+                    <form id="urlForm" class="row g-2 align-items-center">
+                        <div class="col-12 col-md-9">
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text border-0 bg-transparent text-secondary">
+                                    <i class="bi bi-link-45deg fs-4"></i>
+                                </span>
+                                <input type="url" id="mediaUrlInput" class="form-control border-0 bg-transparent fs-6" placeholder="Pega el enlace aquí (Ej. https://youtube.com/watch?v=...)" required autocomplete="off">
+                                <button class="btn btn-link text-secondary text-decoration-none px-2" type="button" id="pasteUrlBtn" title="Pegar del portapapeles">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <button type="submit" class="btn btn-primary btn-lg w-100 rounded-3 brand-gradient-bg border-0 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-search"></i>
+                                <span>Analizar</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Converter Panel (Hidden initially) -->
+        <section id="converterPanel" class="d-none mb-5">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden glass-card">
+                <div class="card-header bg-body-tertiary border-bottom p-3 d-flex align-items-center justify-content-between">
+                    <span class="fw-semibold text-secondary d-flex align-items-center gap-2">
+                        <i class="bi bi-gear-wide-connected text-primary"></i> Estación de Conversión
+                    </span>
+                    <span id="detectedPlatformBadge" class="badge bg-danger rounded-pill px-3 py-2">
+                        <i class="bi bi-youtube me-1"></i> YouTube
+                    </span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        
+                        <!-- Media Preview Column -->
+                        <div class="col-lg-5">
+                            <div class="thumbnail-container shadow-sm mb-3">
+                                <img id="previewImage" src="" alt="Vista previa del video">
+                                <span id="durationBadge" class="badge text-bg-dark opacity-75 position-absolute bottom-0 end-0 m-2 font-monospace">03:45</span>
+                            </div>
+                            <h5 id="previewTitle" class="fw-bold text-truncate mb-1">Título de la Canción / Video</h5>
+                            <p id="previewAuthor" class="text-secondary small mb-3"><i class="bi bi-person-circle me-1"></i> Canal / Artista</p>
+                            
+                            <!-- Preset Quality Selector -->
+                            <div class="bg-body-tertiary p-3 rounded-3 border">
+                                <label class="form-label fw-semibold small text-secondary">Formato y Calidad Objetivo</label>
+                                <select id="formatSelect" class="form-select border-primary-subtle">
+                                    <optgroup label="Audio (Extracción MP3/WAV)">
+                                        <option value="mp3-320" data-type="audio" data-ext="mp3">MP3 - 320 kbps (Máxima Calidad)</option>
+                                        <option value="mp3-192" data-type="audio" data-ext="mp3">MP3 - 192 kbps (Estándar)</option>
+                                        <option value="wav-lossless" data-type="audio" data-ext="wav">WAV - Lossless Audio</option>
+                                    </optgroup>
+                                    <optgroup label="Video (MP4/WEBM)">
+                                        <option value="mp4-4k" data-type="video" data-ext="mp4">MP4 - 4K Ultra HD (2160p)</option>
+                                        <option value="mp4-1080" data-type="video" data-ext="mp4" selected>MP4 - Full HD (1080p)</option>
+                                        <option value="mp4-720" data-type="video" data-ext="mp4">MP4 - HD (720p)</option>
+                                        <option value="webm-1080" data-type="video" data-ext="webm">WEBM - Full HD (1080p)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Settings & Metadata Column -->
+                        <div class="col-lg-7">
+                            <!-- Nav tabs for Settings / ID3 Tags -->
+                            <ul class="nav nav-tabs border-bottom mb-3" id="configTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active fw-semibold" id="tags-tab" data-bs-toggle="tab" data-bs-target="#tags-pane" type="button" role="tab">
+                                        <i class="bi bi-tag-fill me-1 text-primary"></i> Metadatos ID3
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link fw-semibold" id="trim-tab" data-bs-toggle="tab" data-bs-target="#trim-pane" type="button" role="tab">
+                                        <i class="bi bi-scissors me-1 text-primary"></i> Recorte de Duración
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="configTabsContent">
+                                <!-- ID3 Tags Form -->
+                                <div class="tab-pane fade show active" id="tags-pane" role="tabpanel">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input type="text" class="form-control" id="tagTitleInput" placeholder="Título">
+                                                <label for="tagTitleInput">Título</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input type="text" class="form-control" id="tagArtistInput" placeholder="Artista">
+                                                <label for="tagArtistInput">Artista</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input type="text" class="form-control" id="tagAlbumInput" placeholder="Álbum">
+                                                <label for="tagAlbumInput">Álbum</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input type="text" class="form-control" id="tagGenreInput" placeholder="Género">
+                                                <label for="tagGenreInput">Género</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Trim Segment -->
+                                <div class="tab-pane fade" id="trim-pane" role="tabpanel">
+                                    <p class="text-secondary small mb-3">Define los puntos de corte si deseas descargar solo una parte del archivo.</p>
+                                    <div class="row g-3 align-items-center">
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold">Tiempo de Inicio</label>
+                                            <input type="time" step="1" id="trimStartInput" class="form-control font-monospace" value="00:00:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold">Tiempo de Fin</label>
+                                            <input type="time" step="1" id="trimEndInput" class="form-control font-monospace" value="00:03:45">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress & Conversion Action -->
+                            <div class="mt-4 pt-3 border-top">
+                                <!-- Real-time Conversion Progress Bar -->
+                                <div id="progressContainer" class="d-none mb-3">
+                                    <div class="d-flex justify-content-between small fw-semibold mb-1">
+                                        <span id="progressStatusText" class="text-primary"><i class="bi bi-cpu me-1"></i> Conectando al servidor...</span>
+                                        <span id="progressPercentText" class="font-monospace">0%</span>
+                                    </div>
+                                    <div class="progress" style="height: 12px;">
+                                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated brand-gradient-bg" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <button id="startDownloadBtn" class="btn btn-success btn-lg w-100 rounded-3 fw-bold py-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                    <i class="bi bi-download"></i>
+                                    <span>Comenzar Conversión & Descarga</span>
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trending Suggestions Section -->
+        <section class="mb-5">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h3 class="fw-bold fs-4 mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-fire text-danger"></i> Muestras y Tendencias Populares
+                </h3>
+                <span class="badge text-bg-secondary font-monospace">API Demo</span>
+            </div>
+
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-4" id="trendingGrid">
+                <!-- Dynamically populated trend cards -->
+            </div>
+        </section>
+
+        <!-- Download History Table -->
+        <section class="mb-5">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden glass-card">
+                <div class="card-header bg-body-tertiary p-3 d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold mb-0 text-body d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-primary"></i> Historial de Descargas Recientes
+                    </h5>
+                    <button id="clearHistoryBtn" class="btn btn-outline-danger btn-sm rounded-pill">
+                        <i class="bi bi-trash me-1"></i> Borrar Historial
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="ps-3">Formato</th>
+                                    <th scope="col">Título</th>
+                                    <th scope="col">Calidad</th>
+                                    <th scope="col">Fecha</th>
+                                    <th scope="col" class="text-end pe-3">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="emptyHistoryMsg" class="text-center py-5 text-secondary">
+                        <i class="bi bi-inbox fs-1 d-block mb-2 text-opacity-50"></i>
+                        <p class="mb-0">Aún no has procesado ninguna descarga en este navegador.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-top py-4 glass-card bg-body-baseline text-center text-secondary small">
+        <div class="container">
+            <p class="mb-1">StreamForge Studio &copy; 2026 - Herramienta interactiva de conversión multimedia.</p>
+            <p class="mb-0 opacity-75">Construido con Bootstrap 5.3 & JavaScript Puro.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Player Modal -->
+    <div class="modal fade" id="playerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 glass-card">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-header-title modal-title fw-bold text-truncate" id="playerModalTitle">Previsualizar Descarga</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <div id="mediaPlayerContainer" class="ratio ratio-16x9 rounded-3 overflow-hidden bg-black mb-3">
+                        <!-- Dynamic <video> or <audio> player inserted here -->
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span id="playerModalMeta" class="text-secondary small">MP4 - 1080p</span>
+                        <a id="modalDirectDownloadLink" href="#" download class="btn btn-primary btn-sm rounded-pill brand-gradient-bg border-0">
+                            <i class="bi bi-download me-1"></i> Descargar de nuevo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="appToast" class="toast align-items-center border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2" id="toastMessage">
+                    <i class="bi bi-info-circle-fill text-primary"></i> Mensaje de notificación
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5.3.3 JS Bundle CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="origin"></script>
+
+    <!-- Main JS Script -->
+    <script>
+        /**
+         * StreamForge - Downloader & Converter Engine Logic
+         */
+
+        // Sample Data for Trending Items & Auto Detection Simulation
+        const SAMPLE_TRENDS = [
+            {
+                id: 'tr_1',
+                title: 'Blinding Lights - Synthwave Edit',
+                author: 'The Weeknd',
+                platform: 'youtube',
+                duration: '03:22',
+                thumbnail: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
+                sampleAudioUrl: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=synthwave-80s-110045.mp3',
+                url: 'https://youtube.com/watch?v=blinding_lights_sample'
+            },
+            {
+                id: 'tr_2',
+                title: 'Cyberpunk City Ambiance (Lofi Beats)',
+                author: 'ChillHop Lab',
+                platform: 'spotify',
+                duration: '02:45',
+                thumbnail: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
+                sampleAudioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=lofi-study-112191.mp3',
+                url: 'https://open.spotify.com/track/cyberpunk_lofi_sample'
+            },
+            {
+                id: 'tr_3',
+                title: 'Viral Dance Challenge 2026',
+                author: '@trend_creator',
+                platform: 'tiktok',
+                duration: '00:45',
+                thumbnail: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&auto=format&fit=crop&q=80',
+                sampleAudioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=energetic-hip-hop-8303.mp3',
+                url: 'https://tiktok.com/@trend_creator/video/123456789'
+            },
+            {
+                id: 'tr_4',
+                title: 'Deep House Sunset Session',
+                author: 'SoundPulse',
+                platform: 'soundcloud',
+                duration: '04:15',
+                thumbnail: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
+                sampleAudioUrl: 'https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792cb.mp3?filename=deep-house-124479.mp3',
+                url: 'https://soundcloud.com/soundpulse/deep-house-sunset'
+            }
+        ];
+
+        // State Management
+        let currentDetectedMedia = null;
+        let downloadHistory = JSON.parse(localStorage.getItem('sf_history') || '[]');
+        let isConverting = false;
+
+        // DOM Elements
+        const elements = {
+            html: document.documentElement,
+            themeToggleBtn: document.getElementById('themeToggleBtn'),
+            themeIcon: document.getElementById('themeIcon'),
+            themeLabel: document.getElementById('themeLabel'),
+            urlForm: document.getElementById('urlForm'),
+            mediaUrlInput: document.getElementById('mediaUrlInput'),
+            pasteUrlBtn: document.getElementById('pasteUrlBtn'),
+            converterPanel: document.getElementById('converterPanel'),
+            detectedPlatformBadge: document.getElementById('detectedPlatformBadge'),
+            previewImage: document.getElementById('previewImage'),
+            previewTitle: document.getElementById('previewTitle'),
+            previewAuthor: document.getElementById('previewAuthor'),
+            durationBadge: document.getElementById('durationBadge'),
+            formatSelect: document.getElementById('formatSelect'),
+            tagTitleInput: document.getElementById('tagTitleInput'),
+            tagArtistInput: document.getElementById('tagArtistInput'),
+            tagAlbumInput: document.getElementById('tagAlbumInput'),
+            tagGenreInput: document.getElementById('tagGenreInput'),
+            trimEndInput: document.getElementById('trimEndInput'),
+            startDownloadBtn: document.getElementById('startDownloadBtn'),
+            progressContainer: document.getElementById('progressContainer'),
+            progressBar: document.getElementById('progressBar'),
+            progressStatusText: document.getElementById('progressStatusText'),
+            progressPercentText: document.getElementById('progressPercentText'),
+            trendingGrid: document.getElementById('trendingGrid'),
+            historyTableBody: document.getElementById('historyTableBody'),
+            emptyHistoryMsg: document.getElementById('emptyHistoryMsg'),
+            clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+            playerModal: new bootstrap.Modal(document.getElementById('playerModal')),
+            playerModalTitle: document.getElementById('playerModalTitle'),
+            playerModalMeta: document.getElementById('playerModalMeta'),
+            mediaPlayerContainer: document.getElementById('mediaPlayerContainer'),
+            modalDirectDownloadLink: document.getElementById('modalDirectDownloadLink'),
+            toast: new bootstrap.Toast(document.getElementById('appToast')),
+            toastMessage: document.getElementById('toastMessage')
+        };
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            renderTrendingCards();
+            renderHistoryTable();
+            setupEventListeners();
+        });
+
+        // --- THEME MANAGEMENT ---
+        function initTheme() {
+            const savedTheme = localStorage.getItem('sf_theme') || 'dark';
+            setTheme(savedTheme);
+        }
+
+        function setTheme(theme) {
+            elements.html.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('sf_theme', theme);
+            if (theme === 'dark') {
+                elements.themeIcon.className = 'bi bi-moon-stars-fill me-1';
+                elements.themeLabel.innerText = 'Modo Oscuro';
+            } else {
+                elements.themeIcon.className = 'bi bi-sun-fill me-1 text-warning';
+                elements.themeLabel.innerText = 'Modo Claro';
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        function setupEventListeners() {
+            // Theme toggle
+            elements.themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = elements.html.getAttribute('data-bs-theme');
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            // Paste URL button
+            elements.pasteUrlBtn.addEventListener('click', async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    elements.mediaUrlInput.value = text;
+                    showToast('Enlace pegado desde el portapapeles', 'info');
+                } catch (err) {
+                    showToast('Por favor escribe o pega el enlace manualmente.', 'warning');
+                }
+            });
+
+            // Submit URL form
+            elements.urlForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                analyzeUrl(elements.mediaUrlInput.value);
+            });
+
+            // Start Conversion Button
+            elements.startDownloadBtn.addEventListener('click', () => {
+                if (!currentDetectedMedia || isConverting) return;
+                runConversionProcess();
+            });
+
+            // Clear history button
+            elements.clearHistoryBtn.addEventListener('click', () => {
+                downloadHistory = [];
+                localStorage.removeItem('sf_history');
+                renderHistoryTable();
+                showToast('Historial de descargas eliminado.', 'danger');
+            });
+        }
+
+        // --- URL ANALYSIS ENGINE ---
+        function analyzeUrl(url) {
+            let platform = 'youtube';
+            let badgeClass = 'bg-danger';
+            let iconClass = 'bi-youtube';
+            let platformName = 'YouTube';
+
+            const lowerUrl = url.toLowerCase();
+            if (lowerUrl.includes('spotify.com')) {
+                platform = 'spotify';
+                badgeClass = 'bg-success';
+                iconClass = 'bi-spotify';
+                platformName = 'Spotify';
+            } else if (lowerUrl.includes('tiktok.com')) {
+                platform = 'tiktok';
+                badgeClass = 'bg-dark';
+                iconClass = 'bi-tiktok';
+                platformName = 'TikTok';
+            } else if (lowerUrl.includes('soundcloud.com')) {
+                platform = 'soundcloud';
+                badgeClass = 'bg-warning text-dark';
+                iconClass = 'bi-cloud-fill';
+                platformName = 'SoundCloud';
+            } else if (lowerUrl.includes('vimeo.com')) {
+                platform = 'vimeo';
+                badgeClass = 'bg-info text-dark';
+                iconClass = 'bi-vimeo';
+                platformName = 'Vimeo';
+            }
+
+            // Find match in sample trends or generate smart mock metadata
+            const sampleMatch = SAMPLE_TRENDS.find(t => lowerUrl.includes(t.platform));
+            
+            const title = sampleMatch ? sampleMatch.title : 'Track Audio / Video Transcoded Stream';
+            const author = sampleMatch ? sampleMatch.author : 'Artista Desconocido';
+            const thumbnail = sampleMatch ? sampleMatch.thumbnail : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80';
+            const audioSample = sampleMatch ? sampleMatch.sampleAudioUrl : 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=synthwave-80s-110045.mp3';
+
+            currentDetectedMedia = {
+                url,
+                platform,
+                title,
+                author,
+                thumbnail,
+                duration: sampleMatch ? sampleMatch.duration : '03:45',
+                sampleAudioUrl: audioSample
+            };
+
+            // Populate UI Elements
+            elements.previewImage.src = thumbnail;
+            elements.previewTitle.innerText = title;
+            elements.previewAuthor.innerText = author;
+            elements.durationBadge.innerText = currentDetectedMedia.duration;
+
+            elements.tagTitleInput.value = title;
+            elements.tagArtistInput.value = author;
+            elements.tagAlbumInput.value = 'Single (StreamForge Studio)';
+            elements.tagGenreInput.value = 'Electronic / Pop';
+            elements.trimEndInput.value = '00:' + (currentDetectedMedia.duration);
+
+            elements.detectedPlatformBadge.className = `badge ${badgeClass} rounded-pill px-3 py-2`;
+            elements.detectedPlatformBadge.innerHTML = `<i class="bi ${iconClass} me-1"></i> ${platformName}`;
+
+            // Reveal converter section smoothly
+            elements.converterPanel.classList.remove('d-none');
+            elements.converterPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            showToast(`Medio detectado con éxito de ${platformName}.`, 'success');
+        }
+
+        // --- CONVERSION & DOWNLOAD SIMULATION ENGINE ---
+        function runConversionProcess() {
+            isConverting = true;
+            elements.startDownloadBtn.disabled = true;
+            elements.progressContainer.classList.remove('d-none');
+            
+            const selectedOption = elements.formatSelect.options[elements.formatSelect.selectedIndex];
+            const formatExt = selectedOption.dataset.ext;
+            const isVideo = selectedOption.dataset.type === 'video';
+            const formatQuality = selectedOption.text;
+
+            const stages = [
+                { percent: 15, text: 'Conectando con servidores de extracción...' },
+                { percent: 40, text: 'Descargando flujo multimedia de alta velocidad...' },
+                { percent: 70, text: `Transcodificando códec a ${formatExt.toUpperCase()} (FFmpeg WebAssembly)...` },
+                { percent: 90, text: 'Inyectando etiquetas metadatos ID3v2...' },
+                { percent: 100, text: '¡Procesamiento completado con éxito!' }
+            ];
+
+            let stageIdx = 0;
+            const interval = setInterval(() => {
+                const stage = stages[stageIdx];
+                elements.progressBar.style.width = `${stage.percent}%`;
+                elements.progressPercentText.innerText = `${stage.percent}%`;
+                elements.progressStatusText.innerHTML = `<i class="bi bi-cpu me-1"></i> ${stage.text}`;
+
+                stageIdx++;
+                if (stageIdx >= stages.length) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        finishConversion(formatExt, formatQuality, isVideo);
+                    }, 600);
+                }
+            }, 700);
+        }
+
+        async function finishConversion(ext, qualityText, isVideo) {
+            isConverting = false;
+            elements.startDownloadBtn.disabled = false;
+
+            // Generate downloadable Blob with real audio sample
+            try {
+                const response = await fetch(currentDetectedMedia.sampleAudioUrl);
+                const audioBlob = await response.blob();
+                const fileUrl = URL.createObjectURL(audioBlob);
+
+                const finalTitle = elements.tagTitleInput.value || currentDetectedMedia.title;
+                const fileName = `${finalTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${ext}`;
+
+                // Create Auto-Download Link
+                const link = document.createElement('a');
+                link.href = fileUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // Add to History State
+                const historyItem = {
+                    id: 'dl_' + Date.now(),
+                    title: finalTitle,
+                    artist: elements.tagArtistInput.value || currentDetectedMedia.author,
+                    format: ext.toUpperCase(),
+                    quality: qualityText,
+                    isVideo: isVideo,
+                    date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    fileUrl: fileUrl,
+                    thumbnail: currentDetectedMedia.thumbnail
+                };
+
+                downloadHistory.unshift(historyItem);
+                localStorage.setItem('sf_history', JSON.stringify(downloadHistory));
+                renderHistoryTable();
+
+                showToast(`Descarga lista: ${fileName}`, 'success');
+            } catch (err) {
+                showToast('Error al generar el archivo descargable.', 'danger');
+            }
+        }
+
+        // --- TRENDING RENDERER ---
+        function renderTrendingCards() {
+            elements.trendingGrid.innerHTML = '';
+            SAMPLE_TRENDS.forEach(trend => {
+                const col = document.createElement('div');
+                col.className = 'col';
+                col.innerHTML = `
+                    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden glass-card trend-card">
+                        <div class="thumbnail-container">
+                            <img src="${trend.thumbnail}" alt="${trend.title}">
+                            <span class="badge bg-dark platform-badge rounded-pill text-capitalize">
+                                <i class="bi bi-play-circle-fill me-1"></i> ${trend.platform}
+                            </span>
+                            <span class="badge text-bg-dark opacity-75 position-absolute bottom-0 end-0 m-2 font-monospace">${trend.duration}</span>
+                        </div>
+                        <div class="card-body p-3 d-flex flex-column justify-content-between">
+                            <div>
+                                <h6 class="card-title fw-bold text-truncate mb-1">${trend.title}</h6>
+                                <p class="card-text text-secondary small mb-3">${trend.author}</p>
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm rounded-pill w-100 select-trend-btn" data-url="${trend.url}">
+                                <i class="bi bi-download me-1"></i> Convertir Este
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                col.querySelector('.select-trend-btn').addEventListener('click', () => {
+                    elements.mediaUrlInput.value = trend.url;
+                    analyzeUrl(trend.url);
+                });
+
+                elements.trendingGrid.appendChild(col);
+            });
+        }
+
+        // --- HISTORY RENDERER ---
+        function renderHistoryTable() {
+            if (downloadHistory.length === 0) {
+                elements.emptyHistoryMsg.classList.remove('d-none');
+                elements.historyTableBody.innerHTML = '';
+                return;
+            }
+
+            elements.emptyHistoryMsg.classList.add('d-none');
+            elements.historyTableBody.innerHTML = '';
+
+            downloadHistory.forEach(item => {
+                const tr = document.createElement('tr');
+                const badgeColor = item.isVideo ? 'text-bg-info' : 'text-bg-warning';
+                const icon = item.isVideo ? 'bi-file-earmark-play' : 'bi-file-earmark-music';
+
+                tr.innerHTML = `
+                    <td class="ps-3">
+                        <span class="badge ${badgeColor} rounded-pill">
+                            <i class="bi ${icon} me-1"></i> ${item.format}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="${item.thumbnail}" class="rounded-2" style="width: 36px; height: 36px; object-fit: cover;" alt="thumb">
+                            <div class="text-truncate" style="max-width: 220px;">
+                                <div class="fw-semibold text-truncate">${escapeHtml(item.title)}</div>
+                                <div class="text-secondary small text-truncate">${escapeHtml(item.artist)}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="small text-secondary">${escapeHtml(item.quality)}</span></td>
+                    <td><span class="small font-monospace text-secondary">${item.date}</span></td>
+                    <td class="text-end pe-3">
+                        <button class="btn btn-sm btn-outline-primary rounded-circle play-history-btn me-1" title="Reproducir">
+                            <i class="bi bi-play-fill"></i>
+                        </button>
+                        <a href="${item.fileUrl}" download="${item.title}.${item.format.toLowerCase()}" class="btn btn-sm btn-outline-success rounded-circle me-1" title="Descargar">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger rounded-circle delete-history-btn" title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+
+                // Play in Modal
+                tr.querySelector('.play-history-btn').addEventListener('click', () => {
+                    openPlayerModal(item);
+                });
+
+                // Delete item
+                tr.querySelector('.delete-history-btn').addEventListener('click', () => {
+                    downloadHistory = downloadHistory.filter(h => h.id !== item.id);
+                    localStorage.setItem('sf_history', JSON.stringify(downloadHistory));
+                    renderHistoryTable();
+                    showToast('Elemento eliminado del historial.', 'info');
+                });
+
+                elements.historyTableBody.appendChild(tr);
+            });
+        }
+
+        // --- MEDIA PLAYER MODAL ---
+        function openPlayerModal(item) {
+            elements.playerModalTitle.innerText = `${item.title} - ${item.artist}`;
+            elements.playerModalMeta.innerText = `${item.format} | ${item.quality}`;
+            elements.modalDirectDownloadLink.href = item.fileUrl;
+            elements.modalDirectDownloadLink.download = `${item.title}.${item.format.toLowerCase()}`;
+
+            // Inject HTML5 Audio/Video Player
+            if (item.isVideo) {
+                elements.mediaPlayerContainer.innerHTML = `
+                    <video controls autoplay class="w-100 h-100">
+                        <source src="${item.fileUrl}" type="video/mp4">
+                        Tu navegador no soporta reproducción HTML5.
+                    </video>
+                `;
+            } else {
+                elements.mediaPlayerContainer.innerHTML = `
+                    <div class="d-flex flex-column align-items-center justify-content-center h-100 p-4">
+                        <img src="${item.thumbnail}" class="rounded-4 mb-3 shadow-lg" style="width: 140px; height: 140px; object-fit: cover;">
+                        <audio controls autoplay class="w-100 mt-2">
+                            <source src="${item.fileUrl}" type="audio/mpeg">
+                            Tu navegador no soporta reproducción de audio.
+                        </audio>
+                    </div>
+                `;
+            }
+
+            elements.playerModal.show();
+        }
+
+        // Clean player when modal is hidden
+        document.getElementById('playerModal').addEventListener('hidden.bs.modal', () => {
+            elements.mediaPlayerContainer.innerHTML = '';
+        });
+
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(message, type = 'primary') {
+            elements.toastMessage.innerHTML = `<i class="bi bi-info-circle-fill me-1 text-${type}"></i> ${message}`;
+            elements.toast.show();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, match => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[match]));
+        }
+    </script>
+</body>
+</html>
